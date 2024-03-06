@@ -16,7 +16,7 @@ namespace Rolex_Shop
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Rolex());
+            Application.Run(new Form1());
         }
     }
 }
