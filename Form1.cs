@@ -47,6 +47,7 @@ namespace Rolex_Shop
         Font normalFont = new Font("Courier", 10);
 
         //Declare global sounds
+        SoundPlayer printerPlayer = new  SoundPlayer(Properties.Resources.turnOnPrinter);
         // SoundPlayer printerPlayer = new SoundPlayer(Properties.Resources.printerSound);
 
         public Form1()
@@ -168,7 +169,7 @@ namespace Rolex_Shop
             tryCatch_Label.Visible = false;
             changeError_Label.Visible = false;
 
-            //printerPlayer.Play();
+            printerPlayer.Play();
 
             // Receipt printing drawing
             g.Clear(Color.White); // Clears the previous content
