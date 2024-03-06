@@ -4,232 +4,240 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Media;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Media;
-using System.Threading;
 
 namespace Rolex_Shop
 {
     public partial class Form1 : Form
     {
-        //global Varriables
-        double pepsiPrice = 100.25;
-        double datejustPrice = 200.75;
-        double daytonaPrice = 150.75;
-        int numPepsi;
-        int numDatejust;
-        int numDaytona;
-        double tendered;
-        double money;
-        double pepsiReceipt;
-        double daytonaReceipt;
-        double datejustReceipt;
+        //Declaring global constants
+        //Tax cost 
+        const double TAXES_COST = 0.13;
+        //Item cost 
+        const double WATCH_COST = 25000.99;
+        const double BRACELET_COST = 5000.49; 
+        const double CUFFLINK_COST = 1500.99;
 
-        SoundPlayer error;
+        //Declaring global variables and setting to 0 
+        //Number of each item purchased 
+        int watchesPurchased = 0;
+        int braceletsPurchased = 0;
+        int cufflinksPurchased = 0;
+        //Costs
+        double totalCost = 0;
+        double taxTotal = 0;
+        double subTotal = 0;
+        //Amount given to pay
+        double amountTendered = 0;
+        //Change given 
+        double changeGiven = 0;
+        // Order number on receipt
+        int orderNum = 1;
+
+        //Declare all graphics
+        Graphics g;
+        Pen blackPen = new Pen(Color.Black, 5);
+        SolidBrush whiteBrush = new SolidBrush(Color.White);
+        SolidBrush blackBrush = new SolidBrush(Color.Black);
+        Font titleFont = new Font("Courier", 15, FontStyle.Bold);
+        Font normalFont = new Font("Courier", 10);
+
+        //Declare global sounds
+        // SoundPlayer printerPlayer = new SoundPlayer(Properties.Resources.printerSound);
+
         public Form1()
         {
             InitializeComponent();
-            printButton.Visible = false;
-            //error = new SoundPlayer(Properties.Resources.ERROR); havent added sound of a cash register yet if you could do that.
-            titleLabel.Visible = false;
+
+            //Declare Graphic 
+            g = this.CreateGraphics();
+
+            //Try catch label is not visible
+            tryCatch_Label.Visible = false;
+            //New order button is not visible
+            newOrder_Button.Visible = false;
+            //Change Error button is not visible
+            changeError_Label.Visible = false;
+
+            //Buttons are disabled to be subsequently enabled later 
+            printReceipt_Button.Enabled = false;
+            calculateChange_Button.Enabled = false;
         }
 
-        private void totalButton_Click(object sender, EventArgs e)
+        private void calculateButton_Click(object sender, EventArgs e)
         {
-            //when total button is pressed, convert the input to integers, calculate the subtotal, tax and total price.
-            //Catch error when user dont enter a number or enter a text message...
+            //Program assumes no value in text boxes = 0
+            if (watchBox.Text == "")
+            {
+                watchBox.Text = "0";
+            }
+
+            if (braceletBox.Text == "")
+            {
+                braceletBox.Text = "0";
+            }
+
+            if (cufflinkBox.Text == "")
+            {
+                cufflinkBox.Text = "0";
+            }
+
+            //Try-Catch in case value entered is not numerical
             try
             {
-                numPepsi = Convert.ToInt16(pepsiInput.Text);
-                //numDatejust = Convert.ToInt16(dateInput.Text); cant get it working
-                numDaytona = Convert.ToInt16(daytonaInput.Text);
+                //Text box values are converted to variables.
+                watchesPurchased = Convert.ToInt32(watchBox.Text);
+                braceletsPurchased = Convert.ToInt32(braceletBox.Text);
+                cufflinksPurchased = Convert.ToInt32(cufflinkBox.Text);
 
+                //Totals are calculated
+                subTotal = watchesPurchased * WATCH_COST + braceletsPurchased * BRACELET_COST + cufflinksPurchased * CUFFLINK_COST;
+                taxTotal = subTotal * TAXES_COST;
+                totalCost = subTotal + taxTotal;
 
-                double banhmi = numPepsi * pepsiPrice;
-                double ramen = numDatejust * datejustPrice;
-                double boba = numDaytona * daytonaPrice;
+                //Totals are inputed into the labels
+                taxTotal_Label.Text = "Taxes: " + taxTotal.ToString("C");
+                subTotal_Label.Text = "Sub Total: " + subTotal.ToString("C");
+                totalCost_Label.Text = "Total Cost: " + totalCost.ToString("C");
 
-                //pepsiReceipt = pepsi;
-                //datejustReceipt = datejust; cant get it working
-                //daytonaReceipt = daytona;
-
-                double subTotalPrice = (banhmi) + (ramen) + (boba);
-                double tax = subTotalPrice * 0.13;
-                double totalPrice = subTotalPrice + tax;
-                money = totalPrice;
-
-                //subinputLabel.Text = subTotalPrice.ToString("0.00");
-                //taxinputLabel.Text = tax.ToString("0.00");
-                //totalinputLabel.Text = totalPrice.ToString("0.00"); not working
+                //Calculate change button enabled
+                calculateChange_Button.Enabled = true;
             }
             catch
             {
-                subinputlabel.Text = $"Error";
-                taxinputlabel.Text = $"Error";
-                //totalinputlabel.Text = $"Error"; not working
-                error.Play();
+                //Try catch label is shown if the entry is invalid
+                tryCatch_Label.Visible = true;
+                return;
             }
-
-
         }
 
-        private void changeButton_Click(object sender, EventArgs e)
+        private void calculateChange_Button_Click(object sender, EventArgs e)
         {
-            // when calculate change button is pressed, convert the tendered input to double, calculate the change
-            // if the tendered money is lower than the total = error
             try
             {
-                double changeInput = Convert.ToInt16(tenderedInput.Text);
-                double change = (changeInput) - (money);
-                changebackLabel.Text = change.ToString("0.00");
+                //Amount tendered is converted
+                amountTendered = Convert.ToDouble(tenderedBox.Text);
 
-                if (change < 0)
+                // Amount tendered cannot be less than the total cost 
+                if (amountTendered < totalCost)
                 {
-                    changebackLabel.Text = $"U r broke";
-
+                    changeError_Label.Visible = true;
+                    //Won't allow you to print receipt
+                    printReceipt_Button.Enabled = false;
                 }
+                else
+                {
+                    // Allowed to print receipt
+                    printReceipt_Button.Enabled = true;
 
-                printButton.Visible = true;
+                    // Change is calculated 
+                    changeGiven = amountTendered - totalCost;
+
+                    // Amount of change is displayed in the label
+                    changeGiven_Label.Text = "Change: " + changeGiven.ToString("C");
+                }
             }
             catch
             {
-                changebackLabel.Text = $"ERROR";
-                error.Play();
+                // Try catch label is shown if the entry is invalid 
+                tryCatch_Label.Visible = true;
+                return;
             }
-
-
         }
 
-
-
-        private void receiptButton_Click(object sender, EventArgs e)
-
-        // when receipt button click, print receipt.
+        private void printReceipt_Button_Click(object sender, EventArgs e)
         {
-            try
-            {
-                tendered = Convert.ToDouble(tenderedInput.Text);
-                //SoundPlayer cashPlay = new SoundPlayer(Properties.Resources.receiptSound); sound required
-                //cashPlay.Play();
-                receiptInput.Text += $"                  {titleLabel.Text}";
+            // Prevents printing the receipt multiple times
+            printReceipt_Button.Enabled = false;
+            calculateChange_Button.Enabled = false;
+            calculateTotal_Button.Enabled = false;
 
-                //cashPlay.Play();
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{line.Text}"; not sure
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{line.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{numDatejust}           {datejustLabel.Text}                       ${datejusteceipt.ToString("0.00")}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-               ///* receiptInput.Text += $"\n{numDaytona}  not sure         {daytonaLabel.Text} */            ${daytonaReceipt.ToString("0.00")}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{numPepsi}           {pepsiLabel.Text}                          /*   ${pepsiReceipt.ToString("0.00")}";*/
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{line.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                receiptInput.Text += $"\n{subinputlabel.Text}                                       ${subinputlabel.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                receiptInput.Text += $"\n{taxinputlabel.Text}                                                 ${taxinputlabel.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{totalinputlabel.Text}                                              ${totalinputLabel.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{line.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                receiptInput.Text += $"\n{tenderedInput.Text}                                       ${tendered.ToString("0.00")}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{changeLabel.Text}                                            ${changeInput.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                //receiptInput.Text += $"\n{line.Text}";
-
-                this.Refresh();
-                Thread.Sleep(500);
-
-                receiptInput.Text += $"\n                            Thank You!";
-
-                this.Refresh();
-                Thread.Sleep(500);
-                receiptInput.Text += $"\n                         Have a nice day!!";
-                /*receiptLabel.Text += $"\n */                          /*23rd Feb 2024";*/
-            }
-            catch
-            {
-                receiptInput.Text = $"ERROR";
-                error.Play();
-            }
+            // Make text boxes read-only
+            tenderedBox.ReadOnly = true;
+            watchBox.ReadOnly = true;
+            braceletBox.ReadOnly = true;
+            cufflinkBox.ReadOnly = true;
 
 
+            //logo_Label.Visible = false;
 
+            tryCatch_Label.Visible = false;
+            changeError_Label.Visible = false;
 
+            //printerPlayer.Play();
 
+            // Receipt printing drawing
+            g.Clear(Color.White); // Clears the previous content
+            g.DrawRectangle(blackPen, 225, 60, 230, 310);
+            Thread.Sleep(500);
+            g.DrawString("ROLEX SHOP", titleFont, blackBrush, 230, 70);
+            Thread.Sleep(300);
+            g.DrawString(DateTime.Now.ToString(), normalFont, blackBrush, 255, 110);
+            Thread.Sleep(300);
+            g.DrawString("Watches   x " + watchBox.Text + "   @ " + WATCH_COST.ToString("C"), normalFont, blackBrush, 230, 140);
+            Thread.Sleep(300);
+            g.DrawString("Bracelets  x " + braceletBox.Text + "  @ " + BRACELET_COST.ToString("C"), normalFont, blackBrush, 230, 155);
+            Thread.Sleep(300);
+            g.DrawString("Cufflinks   x " + cufflinkBox.Text + "   @ " + CUFFLINK_COST.ToString("C"), normalFont, blackBrush, 230, 170);
+            Thread.Sleep(300);
+            g.DrawString("Sub Total:            " + subTotal.ToString("C"), normalFont, blackBrush, 230, 200);
+            Thread.Sleep(300);
+            g.DrawString("Tax:                      " + taxTotal.ToString("C"), normalFont, blackBrush, 230, 215);
+            Thread.Sleep(300);
+            g.DrawString("Total:                    " + totalCost.ToString("C"), normalFont, blackBrush, 230, 230);
+            Thread.Sleep(300);
+            g.DrawString("Tendered:            " + amountTendered.ToString("C"), normalFont, blackBrush, 230, 245);
+            Thread.Sleep(300);
+            g.DrawString("Change:               " + changeGiven.ToString("C"), normalFont, blackBrush, 230, 260);
+            Thread.Sleep(300);
+            g.DrawString("Order Number: " + orderNum++, titleFont, blackBrush, 255, 290);
+            Thread.Sleep(300);
+            g.DrawString("A Crown for Every Achievement", normalFont, blackBrush, 25, 330);
+            Thread.Sleep(2000);
 
-
-
+            newOrder_Button.Visible = true;
         }
 
-        private void neworderButton_Click(object sender, EventArgs e)
+        private void newOrder_Button_Click(object sender, EventArgs e)
         {
-            //when new order button is clicked reset the input to 0, reset all the label to " " (empty).
-            numPepsi = 0;
-            numDatejust = 0;
-            numDaytona = 0;
-            tendered = 0;
+            newOrder_Button.Visible = false;
 
-            //datejustInput.Text = " ";
-            daytonaInput.Text = " ";
-            pepsiInput.Text = " ";
-            //subinputLabel.Text = " ";
-            taxinputlabel.Text = " ";
-            //totalinputlabel.Text = " ";
-            tenderedInput.Text = " ";
-            changebackLabel.Text = " ";
-            receiptInput.Text = " ";
+            g.Clear(this.BackColor); 
 
+            // Reset UI elements for a new order
+            printReceipt_Button.Enabled = false;
+            calculateChange_Button.Enabled = false;
+            calculateTotal_Button.Enabled = true; // Re-enable the calculate total button
 
+            // Clear text boxes and labels
+            watchBox.Text = "";
+            braceletBox.Text = "";
+            cufflinkBox.Text = "";
+            tenderedBox.Text = "";
+            taxTotal_Label.Text = "Taxes: ";
+            subTotal_Label.Text = "Sub Total:";
+            totalCost_Label.Text = "Total Cost:";
+            changeGiven_Label.Text = "Change:";
 
+            // Reset variables to 0
+            watchesPurchased = 0;
+            braceletsPurchased = 0;
+            cufflinksPurchased = 0;
+            totalCost = 0;
+            taxTotal = 0;
+            subTotal = 0;
+            amountTendered = 0;
+            changeGiven = 0;
 
+            // Make text boxes editable again
+            tenderedBox.ReadOnly = false;
+            watchBox.ReadOnly = false;
+            braceletBox.ReadOnly = false;
+            cufflinkBox.ReadOnly = false;
         }
-    }
-    }
-    }
     }
 }
